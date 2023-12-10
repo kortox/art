@@ -1,11 +1,13 @@
 #!env python
+
 import argparse
+from typing import List
 from dataclasses import dataclass
 import datetime
 import os
+import re
 import sqlite3
 import sys
-from typing import Optional
 
 from inky.auto import auto
 from PIL import Image
@@ -107,18 +109,34 @@ class FramePlayer:
         self.sqlite_conn = sqlite_conn
         self.directory = directory
 
+    @staticmethod
+    def convert_file_names_to_numerical_tuples(file_names: List[int]):
+        num_file_name_list = []
+        for file_name in file_names:
+            result = re.search(r'^(\d+)', file_name)
+            if result:
+                num_file_name_list.append(
+                    # file name's number needed for the sort to be numerical instead of lexical
+                    (int(result.group(0)), file_name)
+                )
+            else:
+                print(f"Found a file name that isn't numerical so ignoring it: {file_name}")
+        num_file_name_list.sort()
+        return num_file_name_list
+
     def get_file_after(self, last_frame_played: LastFramePlayed):
-        all_files_in_dir = os.listdir(self.directory)
-        all_files_in_dir.sort()
+        num_file_name_list = self.convert_file_names_to_numerical_tuples(os.listdir(self.directory))
+        # print(num_file_name_list)
         index_of_next_file = -1
-        for i, file_name in enumerate(all_files_in_dir):
+        for i, (_, file_name) in enumerate(num_file_name_list):
             if file_name == last_frame_played.frame_file_name:
                 index_of_next_file = i
         index_of_next_file += 1
-        return all_files_in_dir[index_of_next_file]
+        return num_file_name_list[index_of_next_file % len(num_file_name_list)][1]
 
     def get_first_file_in_dir(self):
-        return os.listdir(self.directory)[0]
+        num_file_name_list = self.convert_file_names_to_numerical_tuples(os.listdir(self.directory))
+        return num_file_name_list[0][1]
 
     def play_next_frame(self):
         last_frame_played = LastFramePlayed.get_for_dir(sqlite_conn=self.sqlite_conn, directory=self.directory)
@@ -152,11 +170,11 @@ class FramePlayer:
 
         file_name_to_display = os.path.join(next_frame_to_play.directory, next_frame_to_play.frame_file_name)
         print(f"Attempting to render {file_name_to_display}")
-        # display_image(
-        #     inky_display=inky_display,
-        #     img_file=file_name_to_display,
-        # )
-        # print("Successfully rendered image on inky")
+        display_image(
+            inky_display=inky_display,
+            img_file=file_name_to_display,
+        )
+        print("Successfully rendered image on inky")
 
         # only save once everything is successful!
         next_frame_to_play.save(self.sqlite_conn)
