@@ -1,0 +1,10 @@
+#!env zsh
+
+pushd /home/kurt/workspace/art
+
+/home/kurt/.pyenv/versions/art/bin/python /home/kurt/workspace/art/play_frames_in_dir.py \
+--directory 2001-a-space-odyssey \
+--type what \
+--colour red
+
+popd

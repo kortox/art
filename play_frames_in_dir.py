@@ -10,7 +10,7 @@ import sqlite3
 import sys
 
 from inky.auto import auto
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 @dataclass
@@ -37,27 +37,56 @@ def display_image(inky_display, img_file: str):
     # Get the width and height of the image
 
     w, h = img.size
+    print(f"Seeing width & height of {w} x {h}")
 
-    # Calculate the new height and width of the image
+    h_new = h
+    w_new = w
+    if w > h:
+        w_new = 400
+        # h/w * 400 = h_new
+        h_new = int(float(h) / float(w) * w_new)
+    else: # h >= w
+        h_new = 300
+        # w/h * 300 = w_new
+        w_new = int(float(w) / float(h) * h_new)
 
-    h_new = 300
-    w_new = int((float(w) / h) * h_new)
-    w_cropped = 400
+    print(f"Determined new width & height of {w_new} x {h_new}")
+
+
+    # # Calculate the new height and width of the image
+    # h_new = 300
+    # w_new = int((float(w) / h) * h_new)
+    # w_cropped = 400
 
     # Resize the image with high-quality resampling
 
     img = img.resize((w_new, h_new), resample=Image.LANCZOS)
 
-    # Calculate coordinates to crop image to 400 pixels wide
+    # # Calculate coordinates to crop image to 400 pixels wide
 
-    x0 = (w_new - w_cropped) / 2
-    x1 = x0 + w_cropped
-    y0 = 0
-    y1 = h_new
+    # x0 = (w_new - w_cropped) / 2
+    # x1 = x0 + w_cropped
+    # y0 = 0
+    # y1 = h_new
 
-    # Crop image
+    # # Crop image
 
-    img = img.crop((x0, y0, x1, y1))
+    # img = img.crop((x0, y0, x1, y1))
+
+    # Compute w/h deltas cause we'll want them to paste accurately into the letterboxed image.
+    w_delta = 400 - img.size[0]
+    h_delta = 300 - img.size[1]
+
+    w_delta = int(w_delta / 2)
+    h_delta = int(h_delta / 2)
+    print(f"Shifting image to ({w_delta}, {h_delta})")
+
+
+    # Considered ImageOps.expand but it has tricky parity issues with odd valued dimensions
+    letterbox_img = Image.new("RGB", (400,300))
+
+    letterbox_img.paste(img, (w_delta, h_delta))
+    img = letterbox_img
 
     # Convert the image to use a white / black / red colour palette
 
