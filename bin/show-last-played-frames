@@ -1,0 +1,3 @@
+#!env zsh
+
+sqlite3 data/frame_player 'select * from last_frame_played'

@@ -1,0 +1,4 @@
+#!env zsh
+
+echo "Setting frame to $1.jpg"
+python set_frame_for_dir.py --directory 2001-a-space-odyssey --frame "$1.jpg"
